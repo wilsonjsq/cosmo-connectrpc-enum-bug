@@ -1,0 +1,17 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@key"])
+
+type Query {
+  document(id: ID!): Document
+}
+
+enum DocumentStatus {
+  active
+  archived
+}
+
+type Document @key(fields: "id") {
+  id: ID!
+  title: String!
+  status: DocumentStatus!
+}

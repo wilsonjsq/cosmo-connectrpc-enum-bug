@@ -1,0 +1,33 @@
+// Hand-written to mirror exactly what `wgc grpc-service generate` emits
+// for the equivalent operation: SCREAMING_SNAKE_CASE enum-name prefix on
+// every value (Google proto style guide / @wundergraph/protographic
+// convention), zero-valued *_UNSPECIFIED at index 0.
+syntax = "proto3";
+
+package repro.v1;
+
+service DocumentService {
+  rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
+
+enum DocumentStatus {
+  DOCUMENT_STATUS_UNSPECIFIED = 0;
+  DOCUMENT_STATUS_active = 1;
+  DOCUMENT_STATUS_archived = 2;
+}
+
+message Document {
+  string id = 1;
+  string title = 2;
+  DocumentStatus status = 3;
+}
+
+message GetDocumentRequest {
+  string id = 1;
+}
+
+message GetDocumentResponse {
+  Document document = 1;
+}
