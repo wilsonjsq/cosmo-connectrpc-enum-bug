@@ -81,14 +81,24 @@ defect reproduced:             YES
 Two distinct encoder bugs converge on the same SDK-visible symptom
 (`document.status === DOCUMENT_STATUS_UNSPECIFIED`):
 
-1. **JSON wire** — the router serializes the bare GraphQL enum name and
-   does not apply the inverse of the `SCREAMING_SNAKE_CASE(EnumName)_`
-   prefix that `@wundergraph/protographic` / `wgc grpc-service generate`
-   produces (per [Google's protobuf style guide](https://protobuf.dev/programming-guides/style/)).
+1. **JSON wire** — the router serializes the bare GraphQL enum name
+   (`"active"`) and does not apply the inverse of the
+   `SCREAMING_SNAKE_CASE(EnumName)_` prefix that
+   `@wundergraph/protographic` / `wgc grpc-service generate` produces
+   (per [Google's protobuf style guide](https://protobuf.dev/programming-guides/style/)).
+   The receiving SDK's proto3-JSON parser matches the JSON string
+   against the enum value names in the descriptor; `"active"` is not in
+   that list (the descriptor only knows `DOCUMENT_STATUS_active`), so
+   it falls back to the index-0 value `DOCUMENT_STATUS_UNSPECIFIED`.
 2. **Binary wire** — the encoder omits the enum field's tag entirely
    rather than writing the integer. Working hypothesis: the binary
    encoder shares the GraphQL→proto enum mapping path with the JSON
    encoder and, on a lookup miss, elects to skip rather than error.
+   With no field present on the wire, the SDK's proto3-binary parser
+   applies the proto3 default for the type — for enums the index-0
+   value, again `DOCUMENT_STATUS_UNSPECIFIED`. This is indistinguishable
+   on the wire from a deliberately-unset enum, so the receiver has no
+   way to detect that anything went wrong.
 
 A fix that only restores the proto value-name prefix on the JSON path
 (e.g. post-processing generated proto files to strip the enum-name
